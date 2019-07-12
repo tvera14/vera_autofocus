@@ -11,6 +11,9 @@
 #zplab@squidward:~$ cd /mnt/purplearray/ # Get into purple array
 # Can find more on this and other linux procedures in linux notes in Will's folder
 
+# Can use choose_best.py with the path to the sorted images to verify that the
+# sorter is working
+
 
 from pathlib import Path
 import os
@@ -22,12 +25,16 @@ sorted_dir = Path('/Users/zplab/Desktop/VeraPythonScripts/vera_autofocus/microsc
 
 # Make folders for the 3 classes
 (sorted_dir / 'train' / 'acceptable').mkdir()
-(sorted_dir / 'train' / 'slightly_out').mkdir()
-(sorted_dir / 'train' / 'very_out').mkdir()
+(sorted_dir / 'train' / 'slightly_out_neg').mkdir()
+(sorted_dir / 'train' / 'very_out_neg').mkdir()
+(sorted_dir / 'train' / 'slightly_out_pos').mkdir()
+(sorted_dir / 'train' / 'very_out_pos').mkdir()
 
 (sorted_dir / 'test' / 'acceptable').mkdir()
-(sorted_dir / 'test' / 'slightly_out').mkdir()
-(sorted_dir / 'test' / 'very_out').mkdir()
+(sorted_dir / 'test' / 'slightly_out_neg').mkdir()
+(sorted_dir / 'test' / 'very_out_neg').mkdir()
+(sorted_dir / 'test' / 'slightly_out_pos').mkdir()
+(sorted_dir / 'test' / 'very_out_pos').mkdir()
 
 train_test_flipper = 'train' # Use this variable to alternate saving images in the train and test folders
 sorted_dir = sorted_dir / train_test_flipper
@@ -48,7 +55,7 @@ slightly_out = 6
 
 # Keep track of how many images and classes have been generated
 image_counter = 0
-class_counter = 3 # There are only 3 classes in this version of the sorter
+class_counter = 5 # There are 5 classes in this version of the sorter
 
 # Iterate through all sub directories looking for best_focus.txt files.
 for worm in os.listdir(experiment_dir):
@@ -83,13 +90,17 @@ for worm in os.listdir(experiment_dir):
 				distance = int(image.stem) - best_focus
 				print(distance)
 
-				# Use the absolute value of the distance to decide which folder the image should be saved in
-				if abs(distance) <= acceptable:
+				# Use the distance to decide which folder the image should be saved in
+				if distance < (-1 * slightly_out):
+					class_folder = sorted_dir / 'very_out_neg'
+				elif distance < (-1 * acceptable):
+					class_folder = sorted_dir / 'slightly_out_neg'
+				elif distance <= acceptable:
 					class_folder = sorted_dir / 'acceptable'
-				elif abs(distance) <= slightly_out:
-					class_folder = sorted_dir / 'slightly_out'
+				elif distance <= slightly_out:
+					class_folder = sorted_dir / 'slightly_out_pos'
 				else:
-					class_folder = sorted_dir / 'very_out'
+					class_folder = sorted_dir / 'very_out_pos'
 
 				name_counter = 0
 				image_name = str(image.stem) + '_' + str(name_counter) + '.png'
