@@ -29,7 +29,7 @@ def no_worm():
 		f.write('no worm')
 
 # Enter the full path to the image stack
-file_path = '/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/04/2019-06-02t1742 focus'
+file_path = '/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/05/2019-05-29t0942 focus'
 rw.add_image_files_to_flipbook(file_path + '/*.png')
 
 

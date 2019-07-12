@@ -31,8 +31,8 @@ from torchvision import datasets, transforms, models
 
 data_dir = 'microscope_images'
 # Make sure you are running the code from the folder that contains data_dir, or it won't work
-num_train = 100
-num_test = 100
+num_train = 10
+num_test = 10
 
 # Define transforms for the training data and testing data
 resnet_transforms = transforms.Compose([transforms.RandomRotation(30),
@@ -62,13 +62,16 @@ testdata = datasets.ImageFolder(data_dir + '/test', transform=resnet_transforms)
 trainloader = torch.utils.data.DataLoader(traindata, batch_size=num_train, shuffle=True)
 testloader = torch.utils.data.DataLoader(testdata, batch_size=num_test, shuffle=True)
 
-
+# Print out how many images are in the trainloader and testloader
+print("Train batch size = " + str(num_train) + ', test batch size = ' + str(num_test))
+print('Trainloder length = ' + str(len(trainloader)) + ', testloader length = ' + str(len(testloader)))
 
 # Get the pre-trained model, here it is resnet50
 device = torch.device("cuda" if torch.cuda.is_available() 
                                   else "cpu")
 model = models.resnet50(pretrained=True)
-print(model) # Printing the model shows some of the internal layers, not expected to
+#print(model) 
+# Printing the model shows some of the internal layers, not expected to
 # understand these but neat to see
 
 # Freeze the pre-trained layers
