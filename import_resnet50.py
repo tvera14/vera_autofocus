@@ -113,8 +113,6 @@ for epoch in range(epochs):
         optimizer.step()
         running_loss += loss.item()
         
-        #print("steps = " + str(steps))
-        print('step = ' + str(steps))
         if steps % print_every == 0:
             test_loss = 0
             accuracy = 0
@@ -139,7 +137,7 @@ for epoch in range(epochs):
                   f"Test accuracy: {accuracy/len(testloader):.3f}")
             running_loss = 0
             model.train()
-torch.save(model, 'number_classifier_resnet.pth')
+torch.save(model, 'autofocus_resnet.pth')
 
 plt.plot(train_losses, label='Training loss')
 plt.plot(test_losses, label='Validation loss')

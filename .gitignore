@@ -2,6 +2,7 @@
 .DS_Store
 /microscope_images
 number_classifier_resnet.pth
+autofocus_resnet.pth
 
 
 # Byte-compiled / optimized / DLL files

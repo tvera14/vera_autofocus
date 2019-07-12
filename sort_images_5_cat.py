@@ -44,11 +44,6 @@ experiment_dir = Path('/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/')
 # In order to access a purple array directory from Squidward include /mnt/purplearray/
 # instead of Volumes/purplearray
 
-
-# In this version of the image sorter, there are only 3 classes:
-# acceptable (0 and 1 steps away from the optimum)
-# slightly_out (2 to 6 steps away)
-# very_out (7+ steps away)
 # Set the step ranges here to make them easy to change in the future
 acceptable = 1
 slightly_out = 6
