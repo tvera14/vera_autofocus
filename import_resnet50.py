@@ -74,16 +74,18 @@ model = models.resnet50(pretrained=True)
 # Printing the model shows some of the internal layers, not expected to
 # understand these but neat to see
 
-# Freeze the pre-trained layers
-# Re-define the final fully connected layer
-# Create criterion (loss function) and set learning rate
+# Freeze the pre-trained layers, no need to update featue detection
 for param in model.parameters():
     param.requires_grad = False
-    
-model.fc = nn.Sequential(nn.Linear(2048, 512),
+
+# Re-define the final fully connected layer (model.fc, fc = fully connected)
+model.fc = nn.Sequential(nn.Linear(2048, 512), # 2048 inputs to 512 outputs 
                                  nn.ReLU(),
                                  nn.Dropout(0.2),
-                                 nn.Linear(512, 10),
+                                 # The next line needs to be modified for the number of classes
+                                 # in the data set. For the microscope images I currently have 
+                                 # five classes, so there are 5 outputs
+                                 nn.Linear(512, 5), # 512 inputs to 5 outputs
                                  nn.LogSoftmax(dim=1))
 criterion = nn.NLLLoss()
 optimizer = optim.Adam(model.fc.parameters(), lr=0.003)
