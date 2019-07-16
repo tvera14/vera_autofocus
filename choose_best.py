@@ -32,5 +32,31 @@ def no_worm():
 file_path = '/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/05/2019-05-27t0605 focus'
 rw.add_image_files_to_flipbook(file_path + '/*.png')
 
+# Last line
+# rw.run
+# rw.input
+
+"""
+from ris_widget import ris_widget                                       
+rw = ris_widget.RisWidget()
+from PyQt5 import Qt
+b = Qt.QPushButton?
+b = Qt.QPushButton('button')
+def do_something():
+    print('done')
+b.pressed.connect(do_something)
+b.show()
+b.hide()
+rw.flipbook.layout
+rw.flipbook.layout()
+l = rw.flipbook.layout()
+l.add?
+l.add
+l.addWidget(b)
+b.show()
+hist
+
+"""
+
 
 	
