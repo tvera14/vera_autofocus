@@ -119,7 +119,7 @@ model.to(device)
 # The input is (batch size, number of channels, height, width)
 
 # Train the network
-epochs = 10
+epochs = 5
 steps = 0
 running_loss = 0
 print_every = 10
@@ -153,7 +153,7 @@ for epoch in range(epochs):
                     accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
             train_losses.append(running_loss/len(trainloader))
             test_losses.append(test_loss/len(testloader))
-            accuracy_tracker.apppend(accuracy/len(testloader))                    
+            accuracy_tracker.append(accuracy/len(testloader))                    
             print(f"Epoch {epoch+1}/{epochs}.. "
                   f"Train loss: {running_loss/print_every:.3f}.. "
                   f"Test loss: {test_loss/len(testloader):.3f}.. "
