@@ -3,7 +3,7 @@
 /microscope_images
 number_classifier_resnet.pth
 autofocus_resnet.pth
-
+*.pth
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
