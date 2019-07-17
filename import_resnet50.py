@@ -124,7 +124,7 @@ epochs = 3
 steps = 0
 running_loss = 0
 print_every = 10
-train_losses, test_losses = [], []
+train_losses, test_losses, accuracy_tracker = [], [], []
 for epoch in range(epochs):
     for inputs, labels in trainloader:
         steps += 1
