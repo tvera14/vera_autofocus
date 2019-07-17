@@ -12,6 +12,9 @@
 # After getting this to work with the MNIST PNG images, it is now modified to work with the
 # PNG microscope images generated in the lab.
 
+# Modified more using code snipped from the offical Pytorch transfer learning tutorial:
+# https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
+
 # To run individual lines in terminal, type ipython then hit enter
 
 # Import all needed libraries
@@ -22,6 +25,9 @@ from torch import nn
 from torch import optim
 import torch.nn.functional as F
 from torchvision import datasets, transforms, models
+# These last two are used to save info about how the training progressed
+import pickle
+import datetime
 
 
 # This tutorial originally had a custom function to import the image data. However, I don't 
@@ -62,13 +68,24 @@ testdata = datasets.ImageFolder(data_dir + '/test', transform=resnet_transforms)
 trainloader = torch.utils.data.DataLoader(traindata, batch_size=num_train, shuffle=True)
 testloader = torch.utils.data.DataLoader(testdata, batch_size=num_test, shuffle=True)
 
+# Get the classes
+class_names = traindata.classes
+print('Detected ' + str(len(class_names)) + ' classes in training data')
+print(class_names)
+
 # Print out how many images are in the trainloader and testloader
 print("Train batch size = " + str(num_train) + ', test batch size = ' + str(num_test))
 print('Trainloder length = ' + str(len(trainloader)) + ', testloader length = ' + str(len(testloader)))
 
-# Get the pre-trained model, here it is resnet50
-device = torch.device("cuda" if torch.cuda.is_available() 
-                                  else "cpu")
+# Check if cuda is available, and set pytorch to run on GPU or CPU as appropriate
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+    print('Cuda available, running on GPU')
+else:
+    device = torch.device("cpu")
+    print('Cuda is not available, running on CPU')
+    # Give the user a message so they know what is going on
+
 model = models.resnet50(pretrained=True)
 #print(model) 
 # Printing the model shows some of the internal layers, not expected to
@@ -78,8 +95,12 @@ model = models.resnet50(pretrained=True)
 for param in model.parameters():
     param.requires_grad = False
 
+# Get the number of features the model expects in the final fully connected layer, this is different
+# in different models
+num_ftrs = model.fc.in_features
+
 # Re-define the final fully connected layer (model.fc, fc = fully connected)
-model.fc = nn.Sequential(nn.Linear(2048, 512), # 2048 inputs to 512 outputs 
+model.fc = nn.Sequential(nn.Linear(num_ftrs, 512), # 2048 inputs to 512 outputs 
                                  nn.ReLU(),
                                  nn.Dropout(0.2),
                                  # The next line needs to be modified for the number of classes
@@ -99,7 +120,7 @@ model.to(device)
 # The input is (batch size, number of channels, height, width)
 
 # Train the network
-epochs = 1
+epochs = 3
 steps = 0
 running_loss = 0
 print_every = 10
@@ -132,14 +153,28 @@ for epoch in range(epochs):
                     equals = top_class == labels.view(*top_class.shape)
                     accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
             train_losses.append(running_loss/len(trainloader))
-            test_losses.append(test_loss/len(testloader))                    
+            test_losses.append(test_loss/len(testloader)) 
+            accuracy_tracker.append(accuracy/len(testloader))                     
             print(f"Epoch {epoch+1}/{epochs}.. "
                   f"Train loss: {running_loss/print_every:.3f}.. "
                   f"Test loss: {test_loss/len(testloader):.3f}.. "
                   f"Test accuracy: {accuracy/len(testloader):.3f}")
             running_loss = 0
             model.train()
-torch.save(model, 'autofocus_resnet.pth')
+torch.save(model, 'autofocus_resnet50.pth')
+
+# Save the information about how training went
+# Get a unique date and time to id this training round
+now = datetime.datetime.now()
+time_string = (':').join([str(now.hour), str(now.minute)]) 
+date_string = ('-').join([str(now.month), str(now.day), str(now.year)])
+file_name = ('_').join(['resnet18_training', date_string, time_string])
+
+fileObject = open(file_name, 'wb')
+training_data = [train_losses, test_losses, accuracy_tracker]
+pickle.dump(training_data, fileObject)
+fileObject.close
+fileObject.close()
 
 plt.plot(train_losses, label='Training loss')
 plt.plot(test_losses, label='Validation loss')
