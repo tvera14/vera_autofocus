@@ -119,7 +119,7 @@ model.to(device)
 # The input is (batch size, number of channels, height, width)
 
 # Train the network
-epochs = 1
+epochs = 10
 steps = 0
 running_loss = 0
 print_every = 10

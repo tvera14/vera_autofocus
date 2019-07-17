@@ -5,11 +5,10 @@
 
 
 # How to run this from Squidward (GPU)
-#ssh zplab@squidward.wucon.wustl.edu # Connect to Squidward
-#zplab@squidward.wucon.wustl.edu's password: # Enter zplab password
-#zplab@squidward:~$ ls /mnt # Check if the drive is mounted
-#zplab@squidward:~$ cd /mnt/purplearray/ # Get into purple array
-# Can find more on this and other linux procedures in linux notes in Will's folder
+#ssh vera@squidward.wucon.wustl.edu # Connect to Squidward
+# The code to create train and test directories with the subdirectories for categories does
+# not work on Squidward AT ALL, and I do not know why. So long as the correct sorted and
+# experiment directories are provided, the loops to go through folders and copy images work great.
 
 # Can use choose_best.py with the path to the sorted images to verify that the
 # sorter is working
@@ -22,8 +21,12 @@ import shutil
 
 # Specify a directory to copy the sorted images into
 sorted_dir = Path('/Users/zplab/Desktop/VeraPythonScripts/vera_autofocus/microscope_images/')
+# Squidward
+#sorted_dir = Path('/home/vera/VeraPythonScripts/vera_autofocus/microscope_images')  
 
-# Make folders for the 3 classes
+# Make folders for the 5 classes
+# This method of making directories does not work on Squidward. I get a "file not found" error
+# and I'm like.....that's the point?
 (sorted_dir / 'train' / 'acceptable').mkdir()
 (sorted_dir / 'train' / 'slightly_out_neg').mkdir()
 (sorted_dir / 'train' / 'very_out_neg').mkdir()
@@ -41,8 +44,8 @@ sorted_dir = sorted_dir / train_test_flipper
 
 # Set a directory to search in
 experiment_dir = Path('/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/')
-# In order to access a purple array directory from Squidward include /mnt/purplearray/
-# instead of Volumes/purplearray
+# Squidward
+#experiment_dir = Path('/mnt/purplearray//Pittman_Will/20190521_cyclo_dead/')
 
 # Set the step ranges here to make them easy to change in the future
 acceptable = 1
