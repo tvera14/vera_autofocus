@@ -23,6 +23,9 @@ from torch import optim
 from torch.optim import lr_scheduler
 import torch.nn.functional as F
 from torchvision import datasets, transforms, models
+# These last two are used to save info about how the training progressed
+import pickle
+import datetime
 
 
 # This tutorial originally had a custom function to import the image data. However, I don't 
@@ -120,7 +123,7 @@ epochs = 1
 steps = 0
 running_loss = 0
 print_every = 10
-train_losses, test_losses, accuracy_tacker = [], [], []
+train_losses, test_losses, accuracy_tracker = [], [], []
 for epoch in range(epochs):
     for inputs, labels in trainloader:
         steps += 1
@@ -150,16 +153,31 @@ for epoch in range(epochs):
                     accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
             train_losses.append(running_loss/len(trainloader))
             test_losses.append(test_loss/len(testloader))
-            accuracy_tacker.apppend(accuracy/len(testloader))                    
+            accuracy_tracker.apppend(accuracy/len(testloader))                    
             print(f"Epoch {epoch+1}/{epochs}.. "
                   f"Train loss: {running_loss/print_every:.3f}.. "
                   f"Test loss: {test_loss/len(testloader):.3f}.. "
                   f"Test accuracy: {accuracy/len(testloader):.3f}")
             running_loss = 0
             model.train()
+
+# Save the model
 torch.save(model, 'autofocus_resnet18.pth')
 
-plt.plot(train_losses, label='Training loss')
-plt.plot(test_losses, label='Validation loss')
-plt.legend(frameon=False)
-plt.show()
+# Save the information about how training went
+# Get a unique date and time to id this training round
+now = datetime.datetime.now()
+time_string = (':').join([str(now.hour), str(now.minute)]) 
+date_string = ('-').join([str(now.month), str(now.day), str(now.year)])
+file_name = ('_').join(['resnet18_training', date_string, time_string])
+
+fileObject = open(file_name, 'wb')
+training_data = [train_losses, test_losses, accuracy_tracker]
+pickle.dump(training_data, fileObject)
+fileObject.close
+fileObject.close()
+
+#plt.plot(train_losses, label='Training loss')
+#plt.plot(test_losses, label='Validation loss')
+#plt.legend(frameon=False)
+#plt.show()
