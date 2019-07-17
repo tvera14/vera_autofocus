@@ -55,7 +55,7 @@ def get_random_images(num):
 
 to_pil = transforms.ToPILImage()
 images, labels = get_random_images(5)
-fig=plt.figure(figsize=(10,10))
+#fig=plt.figure(figsize=(10,10))
 for ii in range(len(images)):
     image = to_pil(images[ii])
     index = predict_image(image)
