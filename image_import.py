@@ -58,7 +58,7 @@ def process_image(file_path, means, stds):
     
     return tensor_RGB
 
-    def de_process_image(tensor, means, stds):
+def de_process_image(tensor, means, stds):
     # Function takes a tensor corresponding to an image from pytorch and
     # converts it back into a numpy array (may add PIL image). This is useful
     # to check on what is being passed to the network at the end of the full import process
@@ -97,7 +97,6 @@ def process_image(file_path, means, stds):
     return img
  
 # Make a dataset loosely based on ImageFolder, but that uses the more hands on import
-
 import torch
 from torch.utils import data
 from pathlib import Path
