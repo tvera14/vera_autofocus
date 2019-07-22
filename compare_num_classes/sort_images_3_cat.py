@@ -3,6 +3,11 @@
 # copies the images into folders that correspond to how far off it is. This prepares
 #. the images for import and use with Pytorch using ImageFolder.
 
+# Originally the three categories were acceptable, slightly out, and very out. Further testing
+# showed however that the model is REALLY good at telling whether the focal plane is too far
+# above or below the best focus, and not so good at telling really out from a little out. Therefor
+# the three categories are now above, acceptable, and below.
+
 
 # How to run this from Squidward (GPU)
 #ssh zplab@squidward.wucon.wustl.edu # Connect to Squidward
@@ -19,36 +24,33 @@ import shutil
 
 # Specify a directory to copy the sorted images into
 sorted_dir = Path('/Users/zplab/Desktop/VeraPythonScripts/vera_autofocus/microscope_images/')
+# Squidward
+#sorted_dir = Path('/home/vera/VeraPythonScripts/vera_autofocus/microscope_images')  
+
+# This version of the sorter makes 3 classes:
+# 0) Out of focus negative (below)
+# 1) Acceptable 
+# 2) Out of focus positive (above)
 
 # Make folders for the 3 classes
-(sorted_dir / 'train' / 'acceptable').mkdir()
-(sorted_dir / 'train' / 'slightly_out').mkdir()
-(sorted_dir / 'train' / 'very_out').mkdir()
-
-(sorted_dir / 'test' / 'acceptable').mkdir()
-(sorted_dir / 'test' / 'slightly_out').mkdir()
-(sorted_dir / 'test' / 'very_out').mkdir()
+for subfolder in ['train', 'test']:
+	subdir = sorted_dir / subfolder
+	for i in range(3):
+		(subdir / str(i)).mkdir()
 
 train_test_flipper = 'train' # Use this variable to alternate saving images in the train and test folders
 sorted_dir = sorted_dir / train_test_flipper
 
 # Set a directory to search in
 experiment_dir = Path('/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/')
-# In order to access a purple array directory from Squidward include /mnt/purplearray/
-# instead of Volumes/purplearray
+# Squidward
+#experiment_dir = Path('/mnt/purplearray//Pittman_Will/20190521_cyclo_dead/')
 
-
-# In this version of the image sorter, there are only 3 classes:
-# acceptable (0 and 1 steps away from the optimum)
-# slightly_out (2 to 6 steps away)
-# very_out (7+ steps away)
 # Set the step ranges here to make them easy to change in the future
-acceptable = 1
-slightly_out = 6
+acceptable_range = 1 # Images within this many steps of the correct focus are deemed acceptable
 
 # Keep track of how many images and classes have been generated
-image_counter = 0
-class_counter = 3 # There are only 3 classes in this version of the sorter
+image_counter = [0, 0, 0]
 
 # Iterate through all sub directories looking for best_focus.txt files.
 for worm in os.listdir(experiment_dir):
@@ -84,12 +86,15 @@ for worm in os.listdir(experiment_dir):
 				print(distance)
 
 				# Use the absolute value of the distance to decide which folder the image should be saved in
-				if abs(distance) <= acceptable:
-					class_folder = sorted_dir / 'acceptable'
-				elif abs(distance) <= slightly_out:
-					class_folder = sorted_dir / 'slightly_out'
+				if distance <= (-1 * acceptable_range):
+					class_folder = sorted_dir / '0'
+					image_counter[0] += 1
+				elif distance <= acceptable_range:
+					class_folder = sorted_dir / '1'
+					image_counter[1] += 1
 				else:
-					class_folder = sorted_dir / 'very_out'
+					class_folder = sorted_dir / '2'
+					image_counter[2] += 1
 
 				name_counter = 0
 				image_name = str(image.stem) + '_' + str(name_counter) + '.png'
@@ -102,45 +107,8 @@ for worm in os.listdir(experiment_dir):
 				# Save the image file in the appropriate class folder
 				shutil.copy(str(image), (str(class_folder) + '/' + image_name))
 
-				# Update the image counter
-				image_counter = image_counter + 1
+				
 
-print('sort_images found ' + str(image_counter) + ' images and sorted them into '
-	+ str(class_counter) + ' classes')
-
-
-
-
-
-
-
-
-
-
-
-
-
-#Path('.').glob('**/* focus')
-
-# Set a directory to copy the images to. They should be copied because the
-# originals are kept in a system of directories to identify them.
-
-
-
-# When copying the images, rename using parent directory info so there is some
-# record of where the image came from
-
-
-
-
-
-# Set bounds - images greater than a certain amount out of focus go in a greater
-# than category. Do this here so it can easily be adjusted.
-
-
-
-
-# Collect info on how many directories were found, how many images total, and per
-# category counts.
+print(image_counter)
 
 
