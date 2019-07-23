@@ -24,21 +24,20 @@ sorted_dir = Path('/Users/zplab/Desktop/VeraPythonScripts/vera_autofocus/microsc
 # Squidward
 #sorted_dir = Path('/home/vera/VeraPythonScripts/vera_autofocus/microscope_images')  
 
-# Make folders for the 5 classes
+
+# This version of the sorter makes 7 classes:
+# 0) Very out negative
+# 1) Slightly out negative
+# 2) Acceptable
+# 3) Slightly out positive
+# 4) Very out positive
+
 # This method of making directories does not work on Squidward. I get a "file not found" error
-# and I'm like.....that's the point?
-(sorted_dir / 'train' / 'acceptable').mkdir()
-(sorted_dir / 'train' / 'slightly_out_neg').mkdir()
-(sorted_dir / 'train' / 'very_out_neg').mkdir()
-(sorted_dir / 'train' / 'slightly_out_pos').mkdir()
-(sorted_dir / 'train' / 'very_out_pos').mkdir()
-
-(sorted_dir / 'test' / 'acceptable').mkdir()
-(sorted_dir / 'test' / 'slightly_out_neg').mkdir()
-(sorted_dir / 'test' / 'very_out_neg').mkdir()
-(sorted_dir / 'test' / 'slightly_out_pos').mkdir()
-(sorted_dir / 'test' / 'very_out_pos').mkdir()
-
+# and I'm like.....that's the point? Have to go in and manually make all the directories. Boo.
+for subfolder in ['train', 'test']:
+	subdir = sorted_dir / subfolder
+	for i in range(5):
+		(subdir / str(i)).mkdir()
 train_test_flipper = 'train' # Use this variable to alternate saving images in the train and test folders
 sorted_dir = sorted_dir / train_test_flipper
 
@@ -52,8 +51,7 @@ acceptable = 1
 slightly_out = 6
 
 # Keep track of how many images and classes have been generated
-image_counter = 0
-class_counter = 5 # There are 5 classes in this version of the sorter
+image_counter = [0, 0, 0, 0, 0]
 
 # Iterate through all sub directories looking for best_focus.txt files.
 for worm in os.listdir(experiment_dir):
@@ -90,15 +88,20 @@ for worm in os.listdir(experiment_dir):
 
 				# Use the distance to decide which folder the image should be saved in
 				if distance < (-1 * slightly_out):
-					class_folder = sorted_dir / 'very_out_neg'
+					class_folder = sorted_dir / '0'
+					image_counter[0] += 1
 				elif distance < (-1 * acceptable):
-					class_folder = sorted_dir / 'slightly_out_neg'
+					class_folder = sorted_dir / '1'
+					image_counter[1] += 1
 				elif distance <= acceptable:
-					class_folder = sorted_dir / 'acceptable'
+					class_folder = sorted_dir / '2'
+					image_counter[2] += 1
 				elif distance <= slightly_out:
-					class_folder = sorted_dir / 'slightly_out_pos'
+					class_folder = sorted_dir / '3'
+					image_counter[3] += 1
 				else:
-					class_folder = sorted_dir / 'very_out_pos'
+					class_folder = sorted_dir / '4'
+					image_counter[4] += 1
 
 				name_counter = 0
 				image_name = str(image.stem) + '_' + str(name_counter) + '.png'
@@ -111,11 +114,7 @@ for worm in os.listdir(experiment_dir):
 				# Save the image file in the appropriate class folder
 				shutil.copy(str(image), (str(class_folder) + '/' + image_name))
 
-				# Update the image counter
-				image_counter = image_counter + 1
-
-print('sort_images found ' + str(image_counter) + ' images and sorted them into '
-	+ str(class_counter) + ' classes')
+print(image_counter)
 
 
 

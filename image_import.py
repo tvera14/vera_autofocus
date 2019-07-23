@@ -119,7 +119,8 @@ class wormDataset(data.Dataset):
         self.image_paths = []
 
         # Find class folders on the file path
-        for class_name in os.listdir(file_path):
+        for class_name in sorted(os.listdir(file_path)):
+            # Use of sorted is important, numbered classes will import in order which is really helpful later
 
             # Exclude .DS_Store
             if class_name != '.DS_Store':
