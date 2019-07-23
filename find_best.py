@@ -17,21 +17,21 @@ from pathlib import Path
 # Define functions
 def get_prediction(image_path, class_names, means, stds):
 	# Imports and processes an image, then passes it to the model to generate a prediction
+	with torch.no_grad():
+		image = process_image(image_path, means, stds)
+		image.unsqueeze_(0) # Unsqueeze to add a "dummy" dimension - this would be the batch size in a multi image set
+		output = model(image)
 
-	image = process_image(image_path, means, stds)
-	image.unsqueeze_(0) # Unsqueeze to add a "dummy" dimension - this would be the batch size in a multi image set
-	output = model(image)
+		# Convert the output to the top prediction
+		_, prediction_index = torch.max(output.data, 1)
 
-	# Convert the output to the top prediction
-	_, prediction_index = torch.max(output.data, 1)
-
-	# Conver the index, which is a tensor, into a numpy array
-	prediction = torch.Tensor.numpy(prediction_index)
-	# Get the value out of the numpy array
-	prediction = prediction.item()
+		# Conver the index, which is a tensor, into a numpy array
+		prediction = torch.Tensor.numpy(prediction_index)
+		# Get the value out of the numpy array
+		prediction = prediction.item()
 	
-	# Convert the prediction into a class name
-	prediction = int(class_names[prediction])
+		# Convert the prediction into a class name
+		prediction = int(class_names[prediction])
 
 	# The focus classes are indicated by numbers, so the index is equivalent to the class name
 	return prediction
@@ -68,13 +68,28 @@ def get_new_plane(upper_bound, lower_bound, current_plane, prediction):
 # Set the range limits for the focus stack
 plane_range = [0, 44]
 
-# Start logging time
-start = time.time()
+# Check if cuda is available, and set pytorch to run on GPU or CPU as appropriate
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+    print('Cuda available, running on GPU')
+else:
+    device = torch.device("cpu")
+    print('Cuda is not available, running on CPU')
+    # Give the user a message so they know what is going on
 
-# load the model
-model_path = '/Users/zplab/Desktop/VeraPythonScripts/vera_autofocus/compare_num_classes/resnet50_7cat.pth'
+
+# load the pre-trained model
+model_path = '/mnt/purplearray/Vera/vera_autofocus/compare_num_classes/resnet50_7cat.pth'
+#trained_model = torch.load(model_path)
+
+# Instantiate a resnet50 model and pass the statedict from the trained model to it
+#model = models.resnet50(pretrained=True)
+#model.load_state_dict(trained_model.state_dict(), strict = False)
 model = torch.load(model_path)
 model.eval() # Put the model in eval mode
+
+# Start logging time
+start = time.time()
 
 # Enter the class names list, for some models the folders load in order but in others they don't. Check
 # the Jupyter notebook that documents training the model to verify.
@@ -97,7 +112,8 @@ plane_list = []
 start_plane = 30
 
 # Set a path to a focus stack
-focus_stack = Path('/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/06/2019-05-23t0923 focus')
+focus_stack = Path('/mnt/purplearray/Pittman_Will/20190521_cyclo_dead/06/2019-05-23t0923 focus')
+# mod to /mnt/purplearray/ for linux
 
 # Use this for testing functions
 #image_path = '/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/06/2019-06-14t1105 focus/30.png'
