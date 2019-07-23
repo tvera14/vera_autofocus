@@ -15,7 +15,7 @@ import time
 from pathlib import Path
 
 # Define functions
-def get_prediction(image_path, class_names, means, stds):
+def get_prediction(image_path, means, stds):
 	# Imports and processes an image, then passes it to the model to generate a prediction
 	with torch.no_grad():
 		image = process_image(image_path, means, stds)
@@ -29,9 +29,6 @@ def get_prediction(image_path, class_names, means, stds):
 		prediction = torch.Tensor.numpy(prediction_index)
 		# Get the value out of the numpy array
 		prediction = prediction.item()
-	
-		# Convert the prediction into a class name
-		prediction = int(class_names[prediction])
 
 	# The focus classes are indicated by numbers, so the index is equivalent to the class name
 	return prediction
@@ -44,13 +41,11 @@ def get_new_plane(upper_bound, lower_bound, current_plane, prediction):
 	# Goal is to slightly overshoot, so the max number of steps is given
 	# The details of the steps_dict are dependent on the sorter used to class images prior to training the model
 	steps_dict = {
-		0 : 23, # full range / 2 + 1 
-		1 : 13, # 2 x 6 steps + 1
-		2 : 7, # 6 steps + 1	
-		3 : 0, # Placeholder, this should never actually get called
-		4 : -7, # Values are negative for out of focus in the positive direction
-		5 : -13,
-		6 : -23
+		0 : 13, # full range / 2 + 1 
+		1 : 7, # 2 x 6 steps + 1
+		2 : 0, # 6 steps + 1	
+		3 : -7, # Placeholder, this should never actually get called
+		4 : -13
 		}
 
 	steps = steps_dict[prediction]
@@ -79,12 +74,8 @@ else:
 
 
 # load the pre-trained model
-model_path = '/mnt/purplearray/Vera/vera_autofocus/compare_num_classes/resnet50_7cat.pth'
-#trained_model = torch.load(model_path)
-
-# Instantiate a resnet50 model and pass the statedict from the trained model to it
-#model = models.resnet50(pretrained=True)
-#model.load_state_dict(trained_model.state_dict(), strict = False)
+#model_path = '/mnt/purplearray/Vera/vera_autofocus/compare_num_classes/resnet50_5cat.pth'
+model_path = '/Users/zplab/Desktop/VeraPythonScripts/vera_autofocus/compare_num_classes/resnet50_5cat.pth'
 model = torch.load(model_path)
 model.eval() # Put the model in eval mode
 
@@ -103,8 +94,6 @@ stds = [0.229, 0.224, 0.225]
 # many classes the classifer has
 acceptable = 3
 
-class_names = ['0', '6', '1', '4', '3', '2', '5']
-
 prediction_list = []
 plane_list = []
 
@@ -112,7 +101,8 @@ plane_list = []
 start_plane = 30
 
 # Set a path to a focus stack
-focus_stack = Path('/mnt/purplearray/Pittman_Will/20190521_cyclo_dead/06/2019-05-23t0923 focus')
+#focus_stack = Path('/mnt/purplearray/Pittman_Will/20190521_cyclo_dead/06/2019-05-23t0923 focus')
+focus_stack = Path('/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/06/2019-06-08t2148 focus')
 # mod to /mnt/purplearray/ for linux
 
 # Use this for testing functions
@@ -137,7 +127,7 @@ while not acceptable_focus:
 		image_file = '0' + str(int(current_plane)) + '.png'
 	image_path = focus_stack / image_file
 
-	prediction = get_prediction(image_path, class_names, means, stds)
+	prediction = get_prediction(image_path, means, stds)
 
 	print('Prediction: ' + str(prediction))
 
