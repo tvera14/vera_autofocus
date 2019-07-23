@@ -97,7 +97,7 @@ plane_list = []
 start_plane = 30
 
 # Set a path to a focus stack
-focus_stack = Path('/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/07/2019-06-03t0203 focus')
+focus_stack = Path('/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/06/2019-05-23t0923 focus')
 
 # Use this for testing functions
 #image_path = '/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/06/2019-06-14t1105 focus/30.png'

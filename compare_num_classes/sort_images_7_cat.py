@@ -20,7 +20,7 @@ import glob
 import shutil
 
 # Specify a directory to copy the sorted images into
-sorted_dir = Path('/Users/zplab/Desktop/VeraPythonScripts/vera_autofocus/microscope_images/')
+sorted_dir = Path('/Users/zplab/Desktop/VeraPythonScripts/vera_autofocus/microscope_images_7cat/')
 # Squidward
 #sorted_dir = Path('/home/vera/VeraPythonScripts/vera_autofocus/microscope_images')  
 

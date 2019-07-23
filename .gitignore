@@ -1,6 +1,7 @@
 
 .DS_Store
-/microscope_images
+/microscope_images_5cat
+/microscope_images_7cat
 number_classifier_resnet.pth
 autofocus_resnet.pth
 *.pth
