@@ -1,18 +1,16 @@
-# This is a data sampler. It fits around a dataset when it is passed to the data loader.
+# This is a data sampler. It takes the dataset, and generates a set of weights which are passed as an
+# argument to the DataLoader telling it how to sample the data to prevent bias
 # This code is heavily based on the data sampler available at:
 # https://github.com/ufoym/imbalanced-dataset-sampler/commit/3aab47c49ab5e045cafb2e2107c71e7d859f887e
 
 """
 ## Usage
 
-Simply pass an `ImbalancedDatasetSampler` for the parameter `sampler` when creating a `DataLoader`.
-For example:
 
-```python
-from sampler import ImbalancedDatasetSampler
+from sample_balance import wormDatasetSampler
 train_loader = torch.utils.data.DataLoader(
     train_dataset, 
-    sampler=ImbalancedDatasetSampler(train_dataset),
+    sampler=wormDatasetSampler(train_dataset), *******
     batch_size=args.batch_size, 
     **kwargs
 )
@@ -27,6 +25,10 @@ class wormDatasetSampler(torch.utils.data.sampler.Sampler):
     Arguments:
         indices (list, optional): a list of indices
         num_samples (int, optional): number of samples to draw
+        
+    To use the sampler, add an argument to the DataLoader sampler = wormDatasetSampler(wormDataset)
+    This will pass the weights for the labels to the Dataloader
+    Note that shuffle must be false, if shuffling is desired that needs to be part of the sampler
     """
 
     def __init__(self, dataset, indices=None, num_samples=None):
@@ -54,7 +56,7 @@ class wormDatasetSampler(torch.utils.data.sampler.Sampler):
         # I think these weights are what is passed on to the DataLoader, presumably it knows what to do from there
 
     def _get_label(self, dataset, idx):
-    	# Get the label from the dataset
+        # Get the label from the dataset
         # In the wormDataset, each sample is a 1, 2 tensor with an array representing the image + the class
         # tensor[image_array, class_label]
         sample = dataset[idx]
@@ -64,8 +66,10 @@ class wormDatasetSampler(torch.utils.data.sampler.Sampler):
         #image_import.wormDataset
 
     def __iter__(self):
+        
+        # The sampler has to specify how to iterate through itself
         return (self.indices[i] for i in torch.multinomial(
-            self.weights, self.num_samples, replacement=True))
+            self.weights, self.num_samples, replacement=True))     
 
     def __len__(self):
         return self.num_samples

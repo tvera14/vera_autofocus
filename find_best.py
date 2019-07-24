@@ -20,18 +20,21 @@ def get_prediction(image_path, means, stds):
 	with torch.no_grad():
 		image = process_image(image_path, means, stds)
 		image.unsqueeze_(0) # Unsqueeze to add a "dummy" dimension - this would be the batch size in a multi image set
+		
+		model_start = time.time()
 		output = model(image)
+		model_end = time.time()
 
 		# Convert the output to the top prediction
 		_, prediction_index = torch.max(output.data, 1)
-
+		
 		# Conver the index, which is a tensor, into a numpy array
 		prediction = torch.Tensor.numpy(prediction_index)
 		# Get the value out of the numpy array
 		prediction = prediction.item()
 
 	# The focus classes are indicated by numbers, so the index is equivalent to the class name
-	return prediction
+	return prediction, model_start, model_end
 
 
 def get_new_plane(upper_bound, lower_bound, current_plane, prediction):
@@ -92,7 +95,7 @@ stds = [0.229, 0.224, 0.225]
 
 # Index for the class "acceptabe" - images that are in focus. This index will change based on how
 # many classes the classifer has
-acceptable = 3
+acceptable = 2
 
 prediction_list = []
 plane_list = []
@@ -111,6 +114,9 @@ focus_stack = Path('/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/06/201
 upper_bound = plane_range[1]
 lower_bound = plane_range[0]
 
+model_starts = []
+model_ends = []
+
 current_plane = start_plane # Current plane is expected to be an integer
 acceptable_focus = False
 while not acceptable_focus:
@@ -127,7 +133,9 @@ while not acceptable_focus:
 		image_file = '0' + str(int(current_plane)) + '.png'
 	image_path = focus_stack / image_file
 
-	prediction = get_prediction(image_path, means, stds)
+	prediction, model_start, model_end = get_prediction(image_path, means, stds)
+	model_starts.append(model_start)
+	model_ends.append(model_end)
 
 	print('Prediction: ' + str(prediction))
 
@@ -167,6 +175,10 @@ print('Found best: ' + image_file)
 
 # Print out the number of steps, planes + predictions, and total run time
 print('Run time: ' + str(run_time))
+
+model_time = np.array(model_ends) -np.array(model_starts)
+model_time = np.sum(model_time)
+print('Time in model: ', model_time)
 
 from ris_widget import ris_widget  
 rw = ris_widget.RisWidget()                                                                                  
