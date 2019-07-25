@@ -13651,18 +13651,262 @@ Average for model prediction: 0.3003736092494084
 </div>
 </div>
 </div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Considering how well the funnel algorithm works, test it using the 3 cat super biased classifier. What kind of accuracy does this lead to?</p>
+
+</div>
+</div>
+</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="prompt input_prompt">In&nbsp;[35]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Define functions for the funnel algorithm</span>
+<span class="c1"># Import libraries</span>
+<span class="c1"># Import the image processing functions and class</span>
+<span class="kn">from</span> <span class="nn">image_import</span> <span class="k">import</span> <span class="n">process_image</span><span class="p">,</span> <span class="n">de_process_image</span><span class="p">,</span> <span class="n">wormDataset</span>
+
+<span class="c1"># Import all needed libraries</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="k">import</span> <span class="n">nn</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="k">import</span> <span class="n">optim</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+<span class="kn">from</span> <span class="nn">torchvision</span> <span class="k">import</span> <span class="n">datasets</span><span class="p">,</span> <span class="n">transforms</span><span class="p">,</span> <span class="n">models</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="k">import</span> <span class="n">Path</span>
+
+<span class="c1"># Define functions</span>
+<span class="k">def</span> <span class="nf">get_prediction</span><span class="p">(</span><span class="n">image_path</span><span class="p">,</span> <span class="n">means</span><span class="p">,</span> <span class="n">stds</span><span class="p">):</span>
+    <span class="c1"># Imports and processes an image, then passes it to the model to generate a prediction</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">process_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">,</span> <span class="n">means</span><span class="p">,</span> <span class="n">stds</span><span class="p">)</span>
+        <span class="n">image</span><span class="o">.</span><span class="n">unsqueeze_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="c1"># Unsqueeze to add a &quot;dummy&quot; dimension - this would be the batch size in a multi image set</span>
+        
+        <span class="n">model_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="n">model_end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        
+        <span class="c1"># Convert the output to the top prediction</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">prediction_index</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        
+        <span class="c1"># Conver the index, which is a tensor, into a numpy array</span>
+        <span class="n">prediction</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="o">.</span><span class="n">numpy</span><span class="p">(</span><span class="n">prediction_index</span><span class="p">)</span>
+        <span class="c1"># Get the value out of the numpy array</span>
+        <span class="n">prediction</span> <span class="o">=</span> <span class="n">prediction</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+        
+    <span class="c1"># The focus classes are indicated by numbers, so the index is equivalent to the class name</span>
+    <span class="k">return</span> <span class="n">prediction</span><span class="p">,</span> <span class="n">model_start</span><span class="p">,</span> <span class="n">model_end</span>
+
+
+<span class="k">def</span> <span class="nf">get_new_plane</span><span class="p">(</span><span class="n">upper_bound</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">,</span> <span class="n">current_plane</span><span class="p">,</span> <span class="n">prediction</span><span class="p">):</span>
+    <span class="c1"># Determine which focus plane to move to to get another image</span>
+
+    <span class="c1"># Define a &quot;steps dictionary&quot; - how many steps is it from a given class to get to acceptable?</span>
+    <span class="c1"># Goal is to slightly overshoot, so the max number of steps is given</span>
+    <span class="c1"># The details of the steps_dict are dependent on the sorter used to class images prior to training the model</span>
+    <span class="n">steps_dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="mi">0</span> <span class="p">:</span> <span class="o">-</span><span class="mi">23</span><span class="p">,</span>
+        <span class="mi">1</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="mi">2</span> <span class="p">:</span> <span class="mi">23</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="n">steps</span> <span class="o">=</span> <span class="n">steps_dict</span><span class="p">[</span><span class="n">prediction</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">steps</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># Split the difference between the current plane and the lower bound</span>
+        <span class="n">new_plane</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">lower_bound</span> <span class="o">+</span> <span class="p">((</span><span class="n">current_plane</span> <span class="o">-</span> <span class="n">lower_bound</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Spltt the difference between the current plane and the upper bound</span>
+        <span class="n">new_plane</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">upper_bound</span> <span class="o">-</span> <span class="p">((</span><span class="n">upper_bound</span> <span class="o">-</span> <span class="n">current_plane</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">new_plane</span>
+
+<span class="k">def</span> <span class="nf">find_best_funnel</span><span class="p">(</span><span class="n">focus_stack</span><span class="p">):</span>
+    <span class="c1"># Functionalized version of find_best, searches through the stack using the model to ID best focus</span>
+    <span class="c1"># Set the range limits for the focus stack</span>
+    
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    
+    <span class="n">plane_range</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">44</span><span class="p">]</span>
+
+    <span class="c1"># Set means and stds for the model</span>
+    <span class="n">means</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.485</span><span class="p">,</span> <span class="mf">0.456</span><span class="p">,</span> <span class="mf">0.406</span><span class="p">]</span>
+    <span class="n">stds</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.229</span><span class="p">,</span> <span class="mf">0.224</span><span class="p">,</span> <span class="mf">0.225</span><span class="p">]</span>
+    <span class="c1"># Means and stds for Resnet50, update these if using a different model</span>
+
+    <span class="c1"># Index for the class &quot;acceptabe&quot; - images that are in focus. This index will change based on how</span>
+    <span class="c1"># many classes the classifer has</span>
+    <span class="n">acceptable</span> <span class="o">=</span> <span class="mi">2</span>
+
+    <span class="n">prediction_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">plane_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">model_starts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">model_ends</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="c1"># Set the starting plane</span>
+    <span class="n">start_plane</span> <span class="o">=</span> <span class="mi">30</span>
+
+    <span class="n">upper_bound</span> <span class="o">=</span> <span class="n">plane_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">lower_bound</span> <span class="o">=</span> <span class="n">plane_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">current_plane</span> <span class="o">=</span> <span class="n">start_plane</span> <span class="c1"># Current plane is expected to be an integer</span>
+    <span class="n">acceptable_focus</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">acceptable_focus</span><span class="p">:</span>
+        <span class="c1"># Get an image</span>
+        <span class="c1"># For now this is pulled from a focus stack using the plane to specify the file name</span>
+    
+        <span class="k">if</span> <span class="n">current_plane</span> <span class="o">&gt;</span> <span class="mi">9</span><span class="p">:</span>
+            <span class="n">image_file</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">current_plane</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;.png&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">image_file</span> <span class="o">=</span> <span class="s1">&#39;0&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">current_plane</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;.png&#39;</span>
+        <span class="n">image_path</span> <span class="o">=</span> <span class="n">focus_stack</span> <span class="o">/</span> <span class="n">image_file</span>
+        
+        <span class="n">prediction</span><span class="p">,</span> <span class="n">model_start</span><span class="p">,</span> <span class="n">model_end</span> <span class="o">=</span> <span class="n">get_prediction</span><span class="p">(</span><span class="n">image_path</span><span class="p">,</span> <span class="n">means</span><span class="p">,</span> <span class="n">stds</span><span class="p">)</span>
+        <span class="n">model_starts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_start</span><span class="p">)</span>
+        <span class="n">model_ends</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_end</span><span class="p">)</span>
+        
+        <span class="c1"># Check if the image is acceptable</span>
+        <span class="k">if</span> <span class="n">prediction</span> <span class="o">==</span> <span class="n">acceptable</span><span class="p">:</span>
+            <span class="n">acceptable_focus</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">upper_bound</span> <span class="o">==</span> <span class="p">(</span><span class="n">lower_bound</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="c1"># Stop the loop when the boundaries converge</span>
+            <span class="n">acceptable_focus</span> <span class="o">=</span> <span class="kc">True</span>
+
+            
+        <span class="c1"># Re-set the upper or lower bound</span>
+        <span class="k">elif</span> <span class="n">prediction</span> <span class="o">&lt;</span> <span class="n">acceptable</span><span class="p">:</span> <span class="c1"># The focus plane is below the best focus plane</span>
+            <span class="n">lower_bound</span> <span class="o">=</span> <span class="n">current_plane</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># The focus plane is above the best focus plane</span>
+            <span class="n">upper_bound</span> <span class="o">=</span> <span class="n">current_plane</span>
+        
+        <span class="c1"># Capture the current plane + prediction</span>
+        <span class="n">prediction_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prediction</span><span class="p">)</span>
+        <span class="n">plane_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_plane</span><span class="p">)</span>
+        
+        <span class="c1"># Use upper and lower bound + current plane to update the plane</span>
+        <span class="n">current_plane</span> <span class="o">=</span> <span class="n">get_new_plane</span><span class="p">(</span><span class="n">upper_bound</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">,</span> <span class="n">current_plane</span><span class="p">,</span> <span class="n">prediction</span><span class="p">)</span>
+        
+    <span class="c1"># Stop logging execution time</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">run_time</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span>
+
+    <span class="n">model_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">model_ends</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">model_starts</span><span class="p">)</span>
+    <span class="n">model_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">current_plane</span><span class="p">,</span> <span class="n">run_time</span><span class="p">,</span> <span class="n">model_time</span>
 </pre></div>
 
     </div>
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[36]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%capture</span>
+<span class="c1"># Load the pre-trained model (3 category)</span>
+<span class="n">model_path</span> <span class="o">=</span> <span class="s1">&#39;/Users/zplab/Desktop/VeraPythonScripts/vera_autofocus/compare_num_classes/resnet50_3cat.pth&#39;</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">model_path</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span> <span class="c1"># Put the model in eval mode</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[37]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="c1"># Set a directory to search in</span>
+<span class="n">experiment_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;/Volumes/purplearray/Pittman_Will/20190521_cyclo_dead/&#39;</span><span class="p">)</span>
+
+<span class="n">chosen_list</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">found_list</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">run_times</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">model_times</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">correct</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="c1"># Iterate through all sub directories looking for best_focus.txt files.</span>
+<span class="k">for</span> <span class="n">worm</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">experiment_dir</span><span class="p">):</span>
+    <span class="n">worm_dir</span> <span class="o">=</span> <span class="n">experiment_dir</span> <span class="o">/</span> <span class="n">worm</span>
+
+    <span class="k">for</span> <span class="n">stack</span> <span class="ow">in</span> <span class="n">worm_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;* focus&#39;</span><span class="p">):</span>
+        <span class="n">stack_dir</span> <span class="o">=</span> <span class="n">worm_dir</span> <span class="o">/</span> <span class="n">stack</span>
+
+        <span class="n">q</span> <span class="o">=</span> <span class="n">stack_dir</span> <span class="o">/</span> <span class="s1">&#39;best_focus.txt&#39;</span>
+        <span class="c1"># Check if best focus has been noted for this stack</span>
+        <span class="k">if</span> <span class="n">q</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">total</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="c1"># Read the filename of the best focus image out of the textfile, then convert the</span>
+            <span class="c1"># filename (ex. 20.png) into an integer</span>
+            <span class="n">best_focus</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">chosen_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">best_focus</span><span class="p">)</span>
+
+            <span class="c1"># Run find_best in stack_dir to see which image the model selects</span>
+            <span class="n">found_focus</span><span class="p">,</span> <span class="n">run_time</span><span class="p">,</span> <span class="n">model_time</span> <span class="o">=</span> <span class="n">find_best_funnel</span><span class="p">(</span><span class="n">stack_dir</span><span class="p">)</span>
+            <span class="n">found_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">found_focus</span><span class="p">)</span>
+            <span class="n">run_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run_time</span><span class="p">)</span>
+            <span class="n">model_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">found_focus</span> <span class="ow">in</span> <span class="p">[(</span><span class="n">best_focus</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="n">best_focus</span><span class="p">,</span> <span class="p">(</span><span class="n">best_focus</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]:</span>
+                <span class="n">correct</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="n">percent_correct</span> <span class="o">=</span> <span class="n">correct</span> <span class="o">/</span> <span class="n">total</span> <span class="o">*</span> <span class="mi">100</span>
+<span class="n">avg_run_time</span> <span class="o">=</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">run_times</span><span class="p">)</span>
+<span class="n">avg_model_time</span> <span class="o">=</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">model_times</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Percent within one plane of best focus (manual): &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">percent_correct</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; %&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Average run time: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">avg_run_time</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Average for model prediction: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">avg_model_time</span><span class="p">))</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Percent within one plane of best focus (manual): 0.0 %
+Average run time: 0.3358291479257437
+Average for model prediction: 0.06161816914876302
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Well, that doesn't work very well.</p>
+
+</div>
+</div>
 </div>
     </div>
   </div>
