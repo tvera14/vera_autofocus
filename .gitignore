@@ -1,5 +1,6 @@
 
 .DS_Store
+/microscope_images_3cat
 /microscope_images_5cat
 /microscope_images_7cat
 number_classifier_resnet.pth
