@@ -261,18 +261,18 @@ def process_image_BW(file_path, mean, std, transform = None):
     # Load the image
     img = Image.open(file_path)
     
-    # Re-size the image to 256 x 256
+    # Image sizes have been messed with in order to trial a simple model, will put them back eventually
     width, height = img.size
     if width > height:
-        img.thumbnail((550, 1000000)) # Constrain width to 550 pixels, thumbnail adjusts heigh proportionally
+        img.thumbnail((80, 1000000)) # Constrain width to 550 pixels, thumbnail adjusts heigh proportionally
     else:
-        img.thumbnail((1000000, 550)) # Constrain height to 550 pixels
+        img.thumbnail((1000000, 80)) # Constrain height to 550 pixels
         
     # Crop out center 512 by 512
-    left_margin = (img.width-512)/2
-    bottom_margin = (img.height-512)/2
-    right_margin = left_margin + 512
-    top_margin = bottom_margin + 512
+    left_margin = (img.width-64)/2
+    bottom_margin = (img.height-64)/2
+    right_margin = left_margin + 64
+    top_margin = bottom_margin + 64
     img = img.crop((left_margin, bottom_margin, right_margin, top_margin))
 
     # Convert the image into a numpy array
