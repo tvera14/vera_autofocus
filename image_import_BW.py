@@ -239,7 +239,7 @@ def process_image_BW(file_path, mean, std, transform = None):
     # Function loads a black and white .png image and transforms it into
     # a tensor suitable for use with pytorch
     # The non-black and white version makes a faux "RGB" image by stacking 3 greyscale arrays
-    # This version leaves it as a 2D array
+    # This version leaves it as a 2D array with one color channel
     # Inputs:
     #    file_path: string path to the image (currently complete path)
     #               PosixPaths also work
@@ -247,7 +247,7 @@ def process_image_BW(file_path, mean, std, transform = None):
     #        corresponding to RGB
     #    stds: list of 3 standard deviations (RGB) from training data
     # Returns:
-    #   tensor_RGB: torch tensor with dimensions 224 x 224 x 3 corresponding to the image at the file path
+    #   tensor_BW: torch tensor with dimensions 224 x 224 x 3 corresponding to the image at the file path
 
     # This is intended to be a more getting into the nitty gritty method of importing images for use with pytorch
     # Based on the tutorial available here:
@@ -268,7 +268,7 @@ def process_image_BW(file_path, mean, std, transform = None):
     else:
         img.thumbnail((1000000, 550)) # Constrain height to 550 pixels
         
-    # Crop out center 224 by 224
+    # Crop out center 512 by 512
     left_margin = (img.width-512)/2
     bottom_margin = (img.height-512)/2
     right_margin = left_margin + 512
@@ -298,7 +298,7 @@ def process_image_BW(file_path, mean, std, transform = None):
     img = (img - mean)/ std
     
     # Convert the array into a tensor
-    tensor_BW = torch.from_numpy(img_RGB).type(torch.FloatTensor)
+    tensor_BW = torch.from_numpy(img).type(torch.FloatTensor)
     
     return tensor_BW
 
@@ -384,6 +384,90 @@ class wormDataset(data.Dataset):
         label = self.classes.index(class_name)
 
         return sample, label
+
+
+# Dataset for BW images
+import torch
+from torch.utils import data
+from pathlib import Path
+import os
+import glob
+
+class wormDataset_BW(data.Dataset):
+# Loads images from the specified folder into a format suitable for use with pytorch dataloader
+# Images for import must be sorted into folders labelled with the desired class name. The name of the
+# folder will become the label for the class.
+# The classes will be ordered alphanumerically, and this order will persist through to the output
+# of a model trained using the data in the dataset.
+# Arguments:
+#   file_path: string or Path object filename of the directory where the class folders are kept.
+#       This is generally the test or train folder.
+#   means: list of 3 means from the model's original training data corresponding to RGB
+#   stds: list of 3 standard deviations (RGB) from training data
+#   tranform: string indicating a transform to be performed for data augmentation.
+#       hflip = flip horizontally
+#       vflip = flip vertically
+#       default is None
+# Returns:
+#   Dataset object containing the specified data suitable for use with Pytorch
+
+    def __init__(self, file_path, mean, std, transform = None):
+
+        self.file_path = Path(file_path)
+        self.mean = mean
+        self.std = std
+        #Initialization
+        self.classes = [] # Empty list to append class names onto
+        self.transform = transform
+
+        # Indexed list of class_folder/image.png
+        #self.list_IDs = list_IDs
+        self.image_paths = []
+
+        # Find class folders on the file path
+        for class_name in sorted(os.listdir(file_path)):
+            # Use of sorted is important, numbered classes will import in order which is really helpful later
+
+            # Exclude .DS_Store
+            if class_name != '.DS_Store':
+
+                # Save the class name to the classes list
+                self.classes.append(class_name)
+
+                # Make a Path to the class directory
+                class_dir = self.file_path / class_name
+
+                # Note that this is set to work with .png images and needs modification
+                # to work with other types
+                for image in class_dir.glob('*.png'):
+                    # Add the path to the image to the list of image paths
+                    self.image_paths.append(image)
+        
+
+    def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.image_paths)
+
+    def __getitem__(self, index):
+        'Generates one sample of data'
+        # Select sample
+
+        # Needs a list with all the filenames in the list
+        # Here, this is the name of the specific image + the enclosing class folder
+
+        # Uses the index to get class_folder/image_name
+        image_path = self.image_paths[index]
+
+        # Load data and get label
+        sample = process_image_BW(image_path, self.mean, self.std, self.transform)
+
+        # Convert the class folder into the string name of the class
+        class_name = str(image_path.parent.stem)
+        # Use this to convert the string name into the corresponding numerical label
+        label = self.classes.index(class_name)
+
+        return sample, label
+
 
 
 import torch
